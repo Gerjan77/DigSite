@@ -14,6 +14,7 @@ local frame, events = CreateFrame("Frame"), {}
 MapInfoData01 = {}
 
 function logmap()
+-- write in-game map data to file, the data is in MapTable.lua
 	tinsert(MapInfoData01,"uiMapID, Map Name, Left, Right, Top, Bottom")
 	TableWrite(1, 210 )	TableWrite(213, 213 )
 	TableWrite(217, 277 ) TableWrite(279, 325 )
@@ -35,6 +36,7 @@ function logmap()
 end
 
 function TableWrite(firstid,lastid)
+-- write in-game map data to file, the data is in MapTable.lua
 	for id = firstid, lastid do
 		local v0, v5 = CreateVector2D(0, 0), CreateVector2D(0.5, 0.5) 
 		local _, tL = C_Map.GetWorldPosFromMapPos(id, v0) 
@@ -50,6 +52,7 @@ function TableWrite(firstid,lastid)
 end
 	
 function MapPos()
+-- position of the player on the current map
 	local uiMap = C_Map.GetBestMapForUnit("player") 
 	local nm = C_Map.GetMapInfo(uiMap).name 
 	local x,y = C_Map.GetPlayerMapPosition(uiMap,"player"):GetXY() 
@@ -58,12 +61,14 @@ function MapPos()
 end
 
 function WrldPos()
+-- position of the player in world coordinates. z is zero.
 	local y, x, z, instanceID = UnitPosition("player") 
 	print(x, y, instanceID) 
 	return x, y, instanceID
 end
 
 function WorldfromMap(x,y,uiMap)
+-- calculate world coordinates from map coordinates
 	local a = x / 100
 	local b = y / 100
 	local v0 = CreateVector2D(a, b)
@@ -74,6 +79,7 @@ function WorldfromMap(x,y,uiMap)
 end
 
 function Compare(a,b)
+-- compare if two strings are equal
     local n = 0
 	for x = 1, a:len() do
 		if string.byte(a,x) == string.byte(b,x) then n = n + 1 end -- 49 <= 1  48 <= 0
@@ -81,24 +87,10 @@ function Compare(a,b)
 	if n > a:len()-3 then return true end
 end
 
-function FindSite(Dig)
-	local retV, Zne     -- race and zonename
-	for i = 1, #DigKal do
-		if Compare(DigKal[i][1],Dig) then retV = DigKal[i][4] Zne = DigKal[i][3] end
-	end
-	return retV, Zne
-end
-	
-function FindSiteEK(Dig)
-	local retV, Zne     -- race and zonename
-	for i = 1, #DigEK do
-		if Compare(DigEK[i][1],Dig) then retV = DigEK[i][4] Zne = DigEK[i][3] end
-	end
-	return retV, Zne
-end
-
 function FindSiteWorld(Dig,Arr)
-	local retV, Zne     -- race and zonename
+-- find a digsite name in the given array from digsites.lua
+-- return race (Troll, Night Elf ..)and zonename
+	local retV, Zne     
 	for i = 1, #Arr do
 		if Compare(Arr[i][1],Dig) then retV = Arr[i][4] Zne = Arr[i][3] end
 	end
@@ -106,6 +98,7 @@ function FindSiteWorld(Dig,Arr)
 end
 
 function ZoneName(uiMapID)
+-- find the corresponding name to a map ID
 	local Zone
 	for i = 1, #mapdt do
 		if mapdt[i][1] == uiMapID then Zone = mapdt[i][2] end
@@ -114,6 +107,7 @@ function ZoneName(uiMapID)
 end
 
 function Children(continent)
+-- enumerate the map children of a continent
 	local Maps = {}
 	local Zones = {}
 	k = 1
@@ -123,21 +117,8 @@ function Children(continent)
 	return Maps,Zones
 end
 
-function FindZone(Zn)
-	local Left, Right, Top, Bottom, uiMapID
-	for i = 1, #mapdt do
-		if mapdt[i][2] == Zn and mapdt[i][7] == "Zone" and mapdt[i][8] == "Kalimdor" then Left = mapdt[i][3] Right = mapdt[i][4] Top= mapdt[i][5] Bottom= mapdt[i][6] uiMapID = mapdt[i][1] end
-	end
-	return Left, Right, Top, Bottom, uiMapID
-end
-function FindZoneEK(Zn)
-	local Left, Right, Top, Bottom, uiMapID
-	for i = 1, #mapdt do
-		if mapdt[i][2] == Zn and mapdt[i][7] == "Zone" and (mapdt[i][8] == "Eastern Kingdoms" or mapdt[i][8] == "Stranglethorn Vale") then Left = mapdt[i][3] Right = mapdt[i][4] Top= mapdt[i][5] Bottom= mapdt[i][6] uiMapID = mapdt[i][1] end
-	end
-	return Left, Right, Top, Bottom, uiMapID
-end
 function FindZoneWorld(Zn,Continent)
+-- give map info from a zone
 	local Left, Right, Top, Bottom, uiMapID
 	for i = 1, #mapdt do
 		if Compare(mapdt[i][2],Zn) and mapdt[i][7] == "Zone" and mapdt[i][8] == Continent then Left = mapdt[i][3] Right = mapdt[i][4] Top = mapdt[i][5] Bottom = mapdt[i][6] uiMapID = mapdt[i][1] end
@@ -146,36 +127,15 @@ function FindZoneWorld(Zn,Continent)
 end
 
 function WorldToMap(x, y, Left, Right, Top, Bottom, uiMapID)
-	--transform left to 0 and right to 100
+--transform left to 0 and right to 100
 	local map_x = (x - Left) * 100 / (Right - Left)
+--transform top to 0 and bottom to 100
 	local map_y = (y - Top) * 100 / (Bottom - Top)
 	return map_x, map_y, uiMapID
 end
 
-function Kalimdor3()
-	local td = C_ResearchInfo.GetDigSitesForMap(12) 
-	for i = 1, 4 do
-		local nam=td[i].name
-		local x,y=td[i].position:GetXY()
-		local a,b,c = WorldfromMap(x*100,y*100,12)
-		local id=td[i].researchSiteID
-		local r,z = FindSite(nam)
-		DEFAULT_CHAT_FRAME:AddMessage(format("%s %s, %s: %.1f, %.1f", r, nam, z, x*100, y*100))
-	end
-end
-
-function EasternK3()
-	local td = C_ResearchInfo.GetDigSitesForMap(13) 
-	for i = 1, 4 do
-		local nam=td[i].name
-		local x,y=td[i].position:GetXY()
-		local r,z = FindSiteEK(nam)
-		DEFAULT_CHAT_FRAME:AddMessage(format("%s %s, %s: %.1f, %.1f", r, nam, z, x*100, y*100))
-	end
-end
-
---local Ar = {1,2,4,2,3,4,2,3,4,"A", "B", "A"} 
 function Unique(Ar)
+-- test make a unique array from local Ar = {1,2,4,2,3,4,2,3,4,"A", "B", "A"}
 	local Ar2 = {}
 	local k = 1
 	local flags = {} 
@@ -190,94 +150,8 @@ function Unique(Ar)
 	return(Ar2)
 end
 
-function Kalimdor()
-	local uiMap = {}   
-	local td = C_ResearchInfo.GetDigSitesForMap(12) 
-	for i = 1, 4 do                                
-		local nam=td[i].name
-		local x,y=td[i].position:GetXY()             -- Map position Kalimdor
-		local r,z = FindSite(nam)
-		local lf, ri, to, bo, ui = FindZone(z)
-		--DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s", r, nam, z))	
-		uiMap[i] = ui
-	end
-	local UuiMap = Unique(uiMap)
-	for i = 1,#UuiMap do
-		--print(i,#UuiMap)
-		local td2 = C_ResearchInfo.GetDigSitesForMap(UuiMap[i]) 
-		for j = 1, #td2 do                        --> i -> j
-			--local nam=td2[j].name
-			local mapx,mapy=td2[j].position:GetXY()  -- Map position on Zone Map
-			local r,z = FindSite(nam)
-			DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s: %.1f, %.1f", r, nam, z, mapx*100, mapy*100))	
-		end
-	end
-end
-
-
-function EasternKingdoms()
-	local uiMap = {}   
-	local td = C_ResearchInfo.GetDigSitesForMap(13) 
-	for i = 1, 4 do                                
-		local nam=td[i].name
-		local x,y=td[i].position:GetXY()             -- Map position Eastern Kingdoms
-		local r,z = FindSiteEK(nam)
-		local lf, ri, to, bo, ui = FindZoneEK(z)
-		--DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s", r, nam, z))	
-		uiMap[i] = ui
-	end
-	local UuiMap = Unique(uiMap)
-	for i = 1,#UuiMap do
-		--print(i,#UuiMap,UuiMap[i])
-		local td2 = C_ResearchInfo.GetDigSitesForMap(UuiMap[i]) 
-		for j = 1, #td2 do  -- was 1 a 3
-			local nam=td2[j].name
-			local mapx,mapy=td2[j].position:GetXY()  -- Map position on Zone Map
-			local r,z = FindSiteEK(nam)
-			DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s: %.1f, %.1f", r, nam, z, mapx*100, mapy*100))	
-		end
-	end
-end
-
-
-function WorldDigSites(continent)
-	local Ar = {}
-	if continent == "Kalimdor" then Ar = DigKal ContinentNumber = 12
-	elseif continent == "Eastern Kingdoms" then Ar=DigEK ContinentNumber = 13
-	elseif continent == "Outland" then Ar=DigOut ContinentNumber = 101
-	elseif continent == "Northrend" then Ar=DigNorth ContinentNumber = 113
-	elseif continent == "Pandaria" then Ar=DigPan ContinentNumber = 424
-	elseif continent == "Draenor" then Ar=DigDra ContinentNumber = 572
-	elseif continent == "Broken Isles" then Ar=DigBro ContinentNumber = 619
-	elseif continent == "Kul Tiras" then Ar=DigKul ContinentNumber = 876
-	elseif continent == "Zandalar" then Ar=DigZan ContinentNumber = 875
-	else return
-	end
-	local uiMap = {}   
-	local td = C_ResearchInfo.GetDigSitesForMap(ContinentNumber) 
-	for i = 1, #td do                                
-		local nam=td[i].name
-		local x,y=td[i].position:GetXY()             -- Map position Continent map
-		local r,z = FindSiteWorld(nam, Ar)
-		local lf, ri, to, bo, ui = FindZoneWorld(z,continent)
-		DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s", r, nam, z))	
-		uiMap[i] = ui
-	end
-	local UuiMap = Unique(uiMap)
-	for i = 1,#UuiMap do
-		--print("i ", i,#UuiMap,UuiMap[i])   
-		local z = ZoneName(UuiMap[i])
-		local td2 = C_ResearchInfo.GetDigSitesForMap(UuiMap[i]) 
-		for j = 1, #td2 do  
-			local nam=td2[j].name
-			local mapx,mapy=td2[j].position:GetXY()  -- Map position on Zone Map
-			local r,z1 = FindSiteWorld(nam, Ar)
-			DEFAULT_CHAT_FRAME:AddMessage(format("%s - %s, %s: %.1f, %.1f", r, nam, z, mapx*100, mapy*100))	
-		end
-	end
-end
-
 function WorldDigSites2(continent)
+-- list active archeology digsites
 	local Ar = {}
 	local Map = {}
 	if continent == "Kalimdor" then Ar = DigKal ContinentNumber = 12
