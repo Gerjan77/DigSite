@@ -1,0 +1,10 @@
+## Interface: 80000
+## Title: DigSite
+## Author: Geert-Jan Uijtdewilligen
+## Version: v2.0
+## Notes: /digsite  /dig  gives a listing of active digsites in the specified continent. The list includes TomTom location and Race (Troll, Dwarf, ..)
+## Notes:  	usage: /dig [ Kalimdor || Eastern Kingdoms || Outland || Northrend || Pandaria || Draenor || Broken Isles || Kul Tiras || Zandalar ] 
+## SavedVariables: MapInfoData01
+Digsites.lua
+MapTable.lua
+DigSite.lua
